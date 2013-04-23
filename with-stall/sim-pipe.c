@@ -275,10 +275,15 @@ void dump_pipeline(){
 /*Check the control hazard and data hazard. No need to check the Load_Use Hazard particularily for it is included in RAW Data Hazard*/
 void do_stall(){
     /*Control Hazard	*/
-	if(de.inst.a == BNE){
+/*	printf("BNE: %s %d\n",de.opcode==BNE?"BNE":"",de.Branch);*/
+	if(de.Latch == 1){
+/*		printf("Stall from Branch.\n");*/
+/*		printf("BNE: %s %d\n",de.opcode==BNE?"BNE":"",de.Branch);*/
 		fd.inst.a = NOP;
 		fd.inst.b = 0;
 		fd.PC = de.PC;
+/*Release the latch, otherwise it will lock the pipeline forever for the current ID/EXE is "nop"*/
+		de.Latch = 0;
 	}
 /* check the RAW Data hazard*/
 /* There are two types of instruction, "d,s,t" and "t,s,i"
@@ -297,6 +302,7 @@ void do_stall(){
 		&& (mw.oprand.out1 == de.oprand.in1 || mw.oprand.out1 == de.oprand.in2))))//MEM Hazard
 	{
 /*Stall a cycle*/
+/*		printf("NOP from Data Hazard.\n");*/
 		fd.inst = de.inst;
 		fd.PC = de.PC;
 		de.inst.a = NOP;
@@ -366,11 +372,13 @@ READ_OPRAND_VALUE:
 	de.MemWrite = 0;
 	de.MemtoReg = 0;
 	de.Branch = 0;
+	de.Latch = 0;
 /* The setting of the control lines is completely determined by the opcode fields
  * With reference to SimpleScalarToolSet Ver2.0*/
 
     switch(de.opcode){
 	case ADD:
+		de.Branch = 0;
 		de.RegDst = 1;
 		de.MemtoReg = 0;
 		de.RegWrite = 1;
@@ -378,6 +386,7 @@ READ_OPRAND_VALUE:
 		de.MemWrite = 0;
 		break;
     case ADDU:
+	    de.Branch = 0;
 		de.RegDst = 1;
 		de.MemtoReg = 0;
 		de.RegWrite = 1;
@@ -385,6 +394,7 @@ READ_OPRAND_VALUE:
 		de.MemWrite = 0;
 		break;
     case SUBU:
+	    de.Branch = 0;
 		de.RegDst = 1;
 		de.MemtoReg = 0;
 		de.RegWrite = 1;
@@ -392,6 +402,7 @@ READ_OPRAND_VALUE:
 		de.MemWrite = 0;
 		break;
     case ADDIU:
+	    de.Branch = 0;
 		de.RegDst = 0;
 		de.MemtoReg = 0;
 		de.RegWrite = 1;
@@ -400,6 +411,7 @@ READ_OPRAND_VALUE:
 		de.ExtendedImm = IMM;
 		break;
 	case ANDI:
+	    de.Branch = 0;
 		de.RegDst = 0;
 		de.MemtoReg = 0;
 		de.RegWrite = 1;
@@ -412,9 +424,12 @@ READ_OPRAND_VALUE:
 		de.MemRead = 0;
 		de.MemWrite = 0;
 		de.Branch = 1;
+/*Stall the pipeline, a little differect from insert "nop"*/
+		de.Latch = 1;
 		de.ExtendedImm = OFS;
 		break;
 	case JUMP:
+	    de.Branch = 0;
 		de.RegWrite = 0;
 		de.MemRead = 0;
 		de.MemWrite = 0;
@@ -422,11 +437,13 @@ READ_OPRAND_VALUE:
 		de.Target = (de.PC & 0xF0000000)|(TARG<<2);
 		break;
 	case LUI:
+	    de.Branch = 0;
 		de.RegDst = 0;
 		de.RegWrite = 1;
 		de.ExtendedImm = UIMM << 16;
 		break;
 	case LW:
+	    de.Branch = 0;
 		de.RegDst = 0;
 		de.RegWrite = 1;
 		de.ExtendedImm = OFS;
@@ -434,17 +451,20 @@ READ_OPRAND_VALUE:
 		de.MemtoReg = 1;
 		break;
 	case SLL:
+	    de.Branch = 0;
 		de.RegDst = 1;
 		de.RegWrite = 1;
 		de.Shamt = SHAMT;
 		break;
 	case SW:
+	    de.Branch = 0;
 		de.RegWrite = 0;
 		de.MemRead = 0;
 		de.MemWrite = 1;
 		de.ExtendedImm = IMM;
 		break;
 	case SLTI:
+	    de.Branch = 0;
 	    de.RegDst = 0;
 /*		With regard to this instruction, the SimpleScalar Tool Set is WRONG. It should be SET_GPR(RT,(GPR(RS)<IMM)?1:0)*/
 		de.MemRead = 0;
@@ -491,6 +511,7 @@ void do_ex()
 		 em.ALUResult = de.ReadData1|de.ReadData2;
 		 break;
 	  case BNE:
+		 de.Branch = 0;
 		 if(de.ReadData1 != de.ReadData2){
 		 	em.ALUResult = de.PC + 8 + (de.ExtendedImm<<2);
 			em.PCSrc = 1;

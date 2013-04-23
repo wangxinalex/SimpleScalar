@@ -42,6 +42,7 @@ struct idex_buf {
   int MemRead;
   int MemWrite;
   int Branch;
+  int Latch;
 };
 
 /*define buffer between execute and memory stage*/
