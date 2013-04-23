@@ -261,7 +261,7 @@ sim_main(void)
 /*dump the pipeline*/
 void dump_pipeline(){
 	enum md_fault_type _fault;
-	printf("This is Cycle %d------------------------------\n",(int)sim_num_insn);
+	printf("[Cycle %5d]---------------------------------\n",(int)sim_num_insn);
 	printf("[IF]  ");md_print_insn(fd.inst, fd.PC, stdout);printf("\n");
 	printf("[ID]  ");md_print_insn(de.inst, de.PC, stdout);printf("\n");
 	printf("[EX]  ");md_print_insn(em.inst, em.PC, stdout);printf("\n");
@@ -291,10 +291,10 @@ void do_stall(){
  * to compare the oprand.out1 for it varies from RegisterRd to RegisterRt according to
  * differenct types of instructions.
  * */
-	if((em.inst.a != NOP && em.oprand.out1 != DNA 
-		&& (em.oprand.out1 == de.oprand.in1 || em.oprand.out1 == de.oprand.in2))//EX Hazard
-		||(mw.inst.a != NOP && mw.oprand.out1 != DNA
-		&& (mw.oprand.out1 == de.oprand.in1 || mw.oprand.out1 == de.oprand.in2)))//MEM Hazard
+	if((em.RegWrite == 1 && (em.inst.a != NOP && em.oprand.out1 != DNA 
+		&& (em.oprand.out1 == de.oprand.in1 || em.oprand.out1 == de.oprand.in2)))//EX Hazard
+		||(mw.RegWrite == 1 && (mw.inst.a != NOP && mw.oprand.out1 != DNA
+		&& (mw.oprand.out1 == de.oprand.in1 || mw.oprand.out1 == de.oprand.in2))))//MEM Hazard
 	{
 /*Stall a cycle*/
 		fd.inst = de.inst;
