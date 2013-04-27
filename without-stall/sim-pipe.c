@@ -250,6 +250,7 @@ sim_main(void)
 	  //handle the pipeline in reverse so that the instruction could be handled in ascending order
 	  sim_num_insn++;
 	  do_stall();
+	  do_forward();
 	  do_wb();
 	  do_mem();
 	  do_ex();
@@ -272,36 +273,44 @@ void dump_pipeline(){
 	printf("----------------------------------------------\n");
 }
 
-/*Check the control hazard and data hazard. No need to check the Load_Use Hazard particularily for it is included in RAW Data Hazard*/
+/*
+ *Check the Load-use Hazard only, which cannot be solved by forwarding
+ */
 void do_stall(){
-    /*Control Hazard	*/
-	if(de.Latch == 1){
-		fd.inst.a = NOP;
-		fd.PC = de.PC;
-/*Release the latch, otherwise it will lock the pipeline forever for the current ID/EXE is "nop"*/
-		de.Latch = 0;
-	}
-/* check the RAW Data hazard*/
-/* There are two types of instruction, "d,s,t" and "t,s,i"
- * Hence we could not just compare the following Data Hazard types:
- * 1a EX/MEM.RegsiterRd = ID/EX.RegisterRs
- * 1b EX/MEM.RegsiterRd = ID/EX.RegisterRt
- * 2a MEM/WB.RegsiterRd = ID/EX.RegisterRs
- * 2b MEM/WB.RegsiterRd = ID/EX.RegisterRt
- * Consider the instruction format defined in machine.def, it is more appropritate 
- * to compare the oprand.out1 for it varies from RegisterRd to RegisterRt according to
- * differenct types of instructions.
- * */
-	if((em.RegWrite == 1 && (em.inst.a != NOP && em.oprand.out1 != DNA 
-		&& (em.oprand.out1 == de.oprand.in1 || em.oprand.out1 == de.oprand.in2)))//EX Hazard
-		||(mw.RegWrite == 1 && (mw.inst.a != NOP && mw.oprand.out1 != DNA
-		&& (mw.oprand.out1 == de.oprand.in1 || mw.oprand.out1 == de.oprand.in2))))//MEM Hazard
-	{
-/*Stall a cycle*/
-		fd.inst = de.inst;
+   if(em.inst.a != NOP && em.MemRead == 1 && 
+		   (em.oprand.out1 == de.oprand.in1 || em.oprand.out1 == de.oprand.in2)){
+   		fd.inst = de.inst;
 		fd.PC = de.PC;
 		de.inst.a = NOP;
-	}	
+   } 
+}
+
+/*
+ *Check the forwarding condition
+ */
+void do_forward(){
+/*EX Hazard*/
+	if(em.inst.a != NOP && !em.MemRead && 
+			(de.oprand.in1 == em.oprand.out1||de.oprand.in2 == em.oprand.out1)){
+		/*the value of out1 is not determined*/
+		if(em.oprand.out1 == de.RegisterRs){
+			/*printf("ForwardA = 10\n");*/
+			de.ReadData1 = em.ALUResult;
+		}else if(em.oprand.out1 == de.RegisterRt){
+			/*printf("ForwardB = 10\n");*/
+			de.ReadData2 = em.ALUResult;
+		}
+/*MEM Hazard, the "else if" is imprtant for we should not let the MEM forwarding rewite the result of EX forwarding*/
+	}else if(mw.inst.a != NOP && 
+			(de.oprand.in1 == mw.oprand.out1||de.oprand.in2 == mw.oprand.out1)){
+		if(mw.oprand.out1 == de.RegisterRs){
+			/*printf("ForwardA = 01\n");*/
+			de.ReadData1 = mw.MemtoReg == 1?mw.MemReadData:mw.ALUResult;
+		}else if(mw.oprand.out1 == de.RegisterRt){
+			/*printf("ForwardA = 01\n");*/
+			de.ReadData2 = mw.MemtoReg == 1?mw.MemReadData:mw.ALUResult;
+		}
+	}
 }
 
 void do_if()
@@ -315,8 +324,8 @@ void do_if()
   if (de.Jump==1){
   	fd.NPC = de.Target;
 /*  branch taken*/
-  }else if(em.inst.a != NOP && em.PCSrc == 1){
-  	fd.NPC = em.ALUResult;
+  }else if(de.inst.a != NOP && de.Branch == 1){
+  	fd.NPC = de.Target;
 /*  PC = PC + 4*/
   }else{
   	fd.NPC = fd.PC + sizeof(md_inst_t);
@@ -417,10 +426,13 @@ READ_OPRAND_VALUE:
 		de.RegWrite = 0;
 		de.MemRead = 0;
 		de.MemWrite = 0;
-		de.Branch = 1;
-/*Stall the pipeline, a little differect from insert "nop"*/
 		de.Latch = 1;
 		de.ExtendedImm = OFS;
+		de.Target = (de.PC + 8 + (OFS<<2));
+		/*This do_forward is important, if we want to get the result of Branch comparison in decode stage, we must forward the result again in decode stage */
+		do_forward();
+		de.Branch = (de.ReadData1 != de.ReadData2);
+		/*printf("%i %i %s\n",de.ReadData1,de.ReadData2,de.Branch?"Branch Taken":"Not Taken");*/
 		break;
 	case JUMP:
 	    de.Branch = 0;
@@ -505,13 +517,7 @@ void do_ex()
 		 em.ALUResult = de.ReadData1|de.ReadData2;
 		 break;
 	  case BNE:
-		 de.Branch = 0;
-		 if(de.ReadData1 != de.ReadData2){
-		 	em.ALUResult = de.PC + 8 + (de.ExtendedImm<<2);
-			em.PCSrc = 1;
-		 }else{
-		 	em.ALUResult = de.PC + 8;
-		 }
+		 		
 		 break;
 	  case JUMP:
 		break;
