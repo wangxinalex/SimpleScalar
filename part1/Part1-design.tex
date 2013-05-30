@@ -1,0 +1,396 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Programming/Coding Assignment
+% LaTeX Template
+%
+% This template has been downloaded from:
+% http://www.latextemplates.com
+%
+% Original author:
+% Ted Pavlic (http://www.tedpavlic.com)
+%
+% Note:
+% The \lipsum[#] commands throughout this template generate dummy text
+% to fill the template out. These commands should all be removed when
+% writing assignment content.
+%
+% This template uses a Perl script as an example snippet of code, most other
+% languages are also usable. Configure them in the "CODE INCLUSION
+% CONFIGURATION" section.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass{article}
+
+\usepackage{fancyhdr} % Required for custom headers
+\usepackage{lastpage} % Required to determine the last page for the footer
+\usepackage{extramarks} % Required for headers and footers
+\usepackage[usenames,dvipsnames]{color} % Required for custom colors
+\usepackage{graphicx} % Required to insert images
+\usepackage{listings} % Required for insertion of code
+\usepackage{courier} % Required for the courier font
+\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
+\usepackage{paralist}
+% Margins
+\topmargin=-0.45in
+\evensidemargin=0in
+\oddsidemargin=0in
+\textwidth=6.5in
+\textheight=9.0in
+\headsep=0.25in
+\linespread{1.1} % Line spacing
+
+% Set up the header and footer
+\pagestyle{fancy}
+\lhead{\hmwkAuthorCode} % Top left header
+\chead{\hmwkClass\ : \hmwkTitle} % Top center head
+\rhead{\firstxmark} % Top right header
+\lfoot{\lastxmark} % Bottom left footer
+\cfoot{} % Bottom center footer
+\rfoot{Page\ \thepage\ of\ \protect\pageref{LastPage}} % Bottom right footer
+\renewcommand\headrulewidth{0.4pt} % Size of the header rule
+\renewcommand\footrulewidth{0.4pt} % Size of the footer rule
+\setlength\parindent{0pt} % Removes all indentation from paragraphs
+
+%----------------------------------------------------------------------------------------
+%	CODE INCLUSION CONFIGURATION
+%----------------------------------------------------------------------------------------
+
+\definecolor{MyDarkGreen}{rgb}{0.0,0.4,0.0} % This is the color used for comments
+%\lstloadlanguages{C} % Load Perl syntax for listings, for a list of other languages supported see: ftp://ftp.tex.ac.uk/tex-archive/macros/latex/contrib/listings/listings.pdf
+\lstdefinestyle{C}{language=C, % Use Perl in this example
+        frame=single, % Single frame around code
+        basicstyle=\small\ttfamily, % Use small true type font
+        keywordstyle=[1]\color{Blue}\bf, % Perl functions bold and blue
+        keywordstyle=[2]\color{Purple}, % Perl function arguments purple
+        keywordstyle=[3]\color{Blue}\underbar, % Custom functions underlined and blue
+        identifierstyle=, % Nothing special about identifiers
+        commentstyle=\usefont{T1}{pcr}{m}{sl}\color{MyDarkGreen}\small, % Comments small dark green courier font
+        stringstyle=\color{Purple}, % Strings are purple
+        showstringspaces=false, % Don't put marks in string spaces
+        tabsize=5, % 5 spaces per tab
+        %
+        % Put standard Perl functions not included in the default language here
+        morekeywords={rand},
+        %
+        % Put Perl function parameters here
+        morekeywords=[2]{on, off, interp},
+        %
+        % Put user defined functions here
+        morekeywords=[3]{test},
+       	%
+        morecomment=[l][\color{Blue}]{...}, % Line continuation (...) like blue comment
+        numbers=left, % Line numbers on left
+        firstnumber=1, % Line numbers start with line 1
+        numberstyle=\tiny\color{Blue}, % Line numbers are blue and small
+        stepnumber=5 % Line numbers go in steps of 5
+}
+
+\lstdefinestyle{SHELL}{language=bash, % Use Perl in this example
+        frame=single, % Single frame around code
+        basicstyle=\small\ttfamily, % Use small true type font
+        keywordstyle=[1]\color{Blue}\bf, % Perl functions bold and blue
+        keywordstyle=[2]\color{Purple}, % Perl function arguments purple
+        keywordstyle=[3]\color{Blue}\underbar, % Custom functions underlined and blue
+        identifierstyle=, % Nothing special about identifiers
+        commentstyle=\usefont{T1}{pcr}{m}{sl}\color{MyDarkGreen}\small, % Comments small dark green courier font
+        stringstyle=\color{Purple}, % Strings are purple
+        showstringspaces=false, % Don't put marks in string spaces
+        tabsize=5, % 5 spaces per tab
+        %
+        % Put standard Perl functions not included in the default language here
+        morekeywords={rand},
+        %
+        % Put Perl function parameters here
+        morekeywords=[2]{on, off, interp},
+        %
+        % Put user defined functions here
+        morekeywords=[3]{test},
+       	%
+        morecomment=[l][\color{Blue}]{...}, % Line continuation (...) like blue comment
+        numbers=left, % Line numbers on left
+        firstnumber=1, % Line numbers start with line 1
+        numberstyle=\tiny\color{Blue}, % Line numbers are blue and small
+        stepnumber=5 % Line numbers go in steps of 5
+}
+
+%----------------------------------------------------------------------------------------
+%	DOCUMENT STRUCTURE COMMANDS
+%	Skip this unless you know what you're doing
+%----------------------------------------------------------------------------------------
+
+% Header and footer for when a page split occurs within a problem environment
+\newcommand{\enterProblemHeader}[1]{
+\nobreak\extramarks{#1}{#1 continued on next page\ldots}\nobreak
+\nobreak\extramarks{#1 (continued)}{#1 continued on next page\ldots}\nobreak
+}
+
+% Header and footer for when a page split occurs between problem environments
+\newcommand{\exitProblemHeader}[1]{
+\nobreak\extramarks{#1 (continued)}{#1 continued on next page\ldots}\nobreak
+\nobreak\extramarks{#1}{}\nobreak
+}
+
+\setcounter{secnumdepth}{0} % Removes default section numbers
+\newcounter{homeworkProblemCounter} % Creates a counter to keep track of the number of problems
+
+\newcommand{\homeworkProblemName}{}
+\newenvironment{homeworkProblem}[1][Section \arabic{homeworkProblemCounter} ]{ % Makes a new environment called homeworkProblem which takes 1 argument (custom name) but the default is "Problem #"
+\stepcounter{homeworkProblemCounter} % Increase counter for number of problems
+\renewcommand{\homeworkProblemName}{#1} % Assign \homeworkProblemName the name of the problem
+\section{\homeworkProblemName} % Make a section in the document with the custom problem count
+\enterProblemHeader{\homeworkProblemName} % Header and footer within the environment
+}{
+\exitProblemHeader{\homeworkProblemName} % Header and footer after the environment
+}
+
+\newcommand{\problemAnswer}[1]{ % Defines the problem answer command with the content as the only argument
+\noindent\framebox[\columnwidth][c]{\begin{minipage}{0.98\columnwidth}#1\end{minipage}} % Makes the box around the problem answer and puts the content inside
+}
+
+\newcommand{\homeworkSectionName}{}
+\newenvironment{homeworkSection}[1]{ % New environment for sections within homework problems, takes 1 argument - the name of the section
+\renewcommand{\homeworkSectionName}{#1} % Assign \homeworkSectionName to the name of the section from the environment argument
+\subsection{\homeworkSectionName} % Make a subsection with the custom name of the subsection
+\enterProblemHeader{\homeworkProblemName\ [\homeworkSectionName]} % Header and footer within the environment
+}{
+\enterProblemHeader{\homeworkProblemName} % Header and footer after the environment
+}
+
+%----------------------------------------------------------------------------------------
+%	NAME AND CLASS SECTION
+%----------------------------------------------------------------------------------------
+
+\newcommand{\hmwkTitle}{Project1 Part1 Design} % Assignment title
+\newcommand{\hmwkDueDate}{Wednesday,\ April\ 14,\ 2013} % Due date
+\newcommand{\hmwkClass}{Computer Architecture} % Course/class
+\newcommand{\hmwkClassInstructor}{Zhang Weihua} % Teacher/lecturer
+\newcommand{\hmwkAuthorName}{Wang Xin} % Your name
+\newcommand{\hmwkAuthorCode}{10302010023} % Your name
+%----------------------------------------------------------------------------------------
+%	TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+\title{
+\vspace{2in}
+\textmd{\textbf{\hmwkClass}}\\
+\textmd{\hmwkTitle}\\
+\normalsize\vspace{0.1in}\small{Due\ on\ \hmwkDueDate}\\
+\vspace{0.1in}\large{\textit{\hmwkClassInstructor\ }}
+\vspace{3in}
+}
+
+\author{\textbf{\hmwkAuthorName}}
+
+\date{} % Insert date here if you want it to appear below your name
+
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+
+\maketitle
+
+%----------------------------------------------------------------------------------------
+%	TABLE OF CONTENTS
+%----------------------------------------------------------------------------------------
+
+\setcounter{tocdepth}{1} % Uncomment this line if you don't want subsections listed in the ToC
+
+\newpage
+\tableofcontents
+\newpage
+
+%----------------------------------------------------------------------------------------
+%	PROBLEM 1
+%----------------------------------------------------------------------------------------
+
+% To have just one problem per page, simply put a \clearpage after each problem
+
+\begin{homeworkProblem}[Overview]
+To get started with the SimpleScalar simulator structure, we should first get familiar with the simulation process of the CPU. As described in the
+project document:
+\begin{quote}
+The core of the sim-fast simulator resides in two files: sim-fast.c and machine.def. There is a "while (TRUE)" loop in sim-fast.c which you should pay much attention. There is a detailed specification in machine.def. I would suggest you to read it carefully before you begin your work.
+\end{quote}
+Check the main structure of sim-fast.c, we found the main loop of the file (Listing \ref{main loop}):
+
+\begin{lstlisting}[caption=main loop structure of sim-fast.c,label=main loop,style=C]
+ while (TRUE)
+    {
+      /* maintain $r0 semantics */
+      regs.regs_R[MD_REG_ZERO] = 0;
+      /* keep an instruction count */
+#ifndef NO_INSN_COUNT
+      sim_num_insn++;
+#endif /* !NO_INSN_COUNT */
+
+      /* load instruction */
+      MD_FETCH_INST(inst, mem, regs.regs_PC);
+
+      /* decode the instruction */
+      MD_SET_OPCODE(op, inst);
+      /* execute the instruction */
+
+      switch (op)
+	{
+#define DEFINST(OP,MSK,NAME,OPFORM,RES,FLAGS,O1,O2,I1,I2,I3)		\
+	case OP:							\
+	  SYMCAT(OP,_IMPL);						\
+	  break;
+#define DEFLINK(OP,MSK,NAME,MASK,SHIFT)					\
+	case OP:							\
+	  panic("attempted to execute a linking opcode");
+#define CONNECT(OP)
+#define DECLARE_FAULT(FAULT)						\
+	  { /* uncaught... */break; }
+#include "machine.def"
+	default:
+	  panic("attempted to execute a bogus opcode");
+	}
+      /* execute next instruction */
+      regs.regs_PC = regs.regs_NPC;
+      regs.regs_NPC += sizeof(md_inst_t);
+    }
+\end{lstlisting}
+The structure of the loop was a simulation of a CPU clock cycle.
+\begin{asparaitem}
+\item At the beginning of every loop, Line 4 set the MD\_REG\_ZERO to zero to maintain the semantics of register \$r0
+\item The macro MD\_FETCH\_INST corresponds to the Instruction Fetch stage in a single cycle datapath. CPU will fetch the instruction stored at regs.regs.PC.
+\item MD\_SET\_OPCODE corresponds to the Decode stage but it only determine the type of the opcode. The operator will be stored in the variable op.
+\item DEFINST check whether the instruction opcode was defined, if so, SYMCAT will combine the implementation defined in machine.def with the related instruction and excute the following steps. Otherwise, it will throw an exception.
+\item Then the simulator will update the PC and fetch the next instruction (Line 33-35).
+\end{asparaitem}
+
+\end{homeworkProblem}
+
+%----------------------------------------------------------------------------------------
+%	PROBLEM 2
+%----------------------------------------------------------------------------------------
+\begin{homeworkProblem}[Instruction Format]
+The file machine.def is actually a symbolic link which points to target-pisa/pisa.def.
+This file defines all aspects of the SimpleScalar instruction set architecture. Each instruction set in the architecture has a DEFINST() macro call included below.
+In other words, the DEFINST defines the format of the instruction including the opcode, opname, operands, dependencies.
+The \#define XXX\_IMPL implements the instruction being defined. Hence we should implement the expression for new instructions here.\par
+Here is a example:
+\begin{lstlisting}[caption=definition of add instruction,label=add instruction,style=C]
+#define ADD_IMPL							\
+  {									\
+    if (OVER(GPR(RS), GPR(RT)))						\
+      DECLARE_FAULT(md_fault_overflow);					\
+									\
+    SET_GPR(RD, GPR(RS) + GPR(RT));					\
+  }
+DEFINST(ADD,	 		0x40,
+	"add", 			"d,s,t",
+	IntALU, 		F_ICOMP,
+	DGPR(RD), DNA,		DGPR(RS), DGPR(RT), DNA)
+\end{lstlisting}
+Listing \ref{add instruction} demonstrates the implementation of "add" instruction.
+In the macro \#define ADD\_IMPL is the C expression of the instruction. From the name of each macros we can get the meaning of each variable.
+This instruction get the source variables from register RS and RT. The helper function OVER detects whether the sum of two variables overflows.
+If not, add the value of two variables and write the sum in register RD.
+The following information defines the format of instruction.
+\begin{asparaitem}
+\item The opcode is 0x40
+\item The operands is ``d,s,t''. This field is used by disassembler to specify the printed order.
+\item The function unit is Int\_ALU and the instruction flag is I\_COMP, which is predefined in ss.h
+\item The output dependency designator is RD only, hence we need to use a spaceholder DNA to mark the unused field.
+\item The input dependency are register RS and RT.
+\end{asparaitem}
+
+Here is another sample using immediate number:
+\begin{lstlisting}[caption=definition of xori instruction,label=xori instruction,style=C]
+#define XORI_IMPL							\
+  {									\
+    SET_GPR(RT, GPR(RS) ^ UIMM);					\
+  }
+DEFINST(XORI, 			0x53,
+	"xori",			"t,s,u",
+	IntALU,			F_ICOMP|F_IMM,
+	DGPR(RT), DNA, 		DGPR(RS), DNA, DNA)
+\end{lstlisting}
+The most significant difference between ``add'' and "xori" is the operands field. Instruction ``xori'' uses unsigned immediate value ``u'' and the function flag includes F\_IMM to mark the immediate number.
+\end{homeworkProblem}
+%----------------------------------------------------------------------------------------
+%	PROBLEM 3
+%----------------------------------------------------------------------------------------
+\begin{homeworkProblem}[AddOk]
+In order to add a new instruction, we should first know the opcode of the instruction. Therefore we need to disassemble the test case:
+\begin{lstlisting}[caption=Disassembling the test case,label=Disassembling,style=SHELL]
+sslittle-na-sstrix-objdump -x -d test1>test1.dump
+\end{lstlisting}
+In the dump file of test1, we can find the trace of the target instruction ``addOK'':
+\begin{lstlisting}[caption=addOK instruction in dump file,label=addOK in dump file,style=C]
+00400270 <addOK+30> 0x00000061:10111300
+\end{lstlisting}
+The opcode 0x61 has not appeared in the machine.def, therefore it must be the opcode of ``addOK''.
+Then we can get the implementation of ``addOK'' easily (List \ref{addOK implementation}):
+\begin{lstlisting}[caption=addOK instruction implementation,label=addOK implementation,style=C]
+#define ADDOK_IMPL						\
+	{									\
+		if(OVER(GPR(RS),GPR(RT)))		\
+				SET_GPR(RD,0);			\
+		else							\	
+				SET_GPR(RD,1);			\
+	}
+DEFINST(ADDOK,		0x61,
+		"addOK",	"d,s,t",
+		IntALU,		F_ICOMP,
+		DGPR(RD), DNA,		DGPR(RS), DGPR(RT),DNA)
+\end{lstlisting}
+The process of this instruction is only a subset of ``add'' instruction.
+
+\end{homeworkProblem}
+
+%----------------------------------------------------------------------------------------
+%	PROBLEM 3
+%----------------------------------------------------------------------------------------
+\begin{homeworkProblem}[BitCount]
+Similarly, we can get the opcode of ``bitCount'' instruction from dump file of test2.
+\begin{lstlisting}[caption=bitCount instruction in dump file,label=bitCount in dump file,style=C]
+00400358 <bitCount+50> 0x00000062:02030001
+\end{lstlisting}
+We should pay attention to the format of this instruction for it involves an immediate number to distinguish which digit should we count: 1 or 0.
+\begin{lstlisting}[caption=bitCount instruction implementation,label=bitCount implementation,style=C]
+#define BITCOUNT_IMPL							\
+  {									\
+	unsigned int count = 0;			\
+	unsigned int num = 0;				\
+	for(num = (unsigned)GPR(RS); num > 0; num >>= 1)	\
+		count += (num & 0x1);				\
+	SET_GPR(RT, IMM ? count : (32 - count));		\
+  }
+DEFINST(BITCOUNT, 			0x62,
+	"bitCount",			"t,s,u",
+	IntALU,			F_ICOMP|F_IMM,
+	DGPR(RT), DNA, 		DGPR(RS), DNA, DNA)
+\end{lstlisting}
+
+\end{homeworkProblem}
+%----------------------------------------------------------------------------------------
+%	PROBLEM 3
+%----------------------------------------------------------------------------------------
+\begin{homeworkProblem}[Result]
+Then we rebuild the sim-fast simulator:
+\begin{lstlisting}[caption=Rebuild the sim-fast simulator,label=Rebuild,style=C]
+make clean
+make config-pisa
+make sim-fast
+\end{lstlisting}
+Run the two test cases using sim-fast and get the right output:
+\begin{lstlisting}[caption=Output,label=Output,style=C]
+sim: ** starting *fast* functional simulation **
+addOK(0x1, 0xffffffff)=1	Pass!
+addOK(0x80000000, 0x80000000)=0	Pass!
+
+sim: ** starting *fast* functional simulation **
+bitCount(0x5, 1)=2	Pass!
+bitCount(0x7, 1)=3	Pass!
+bitCount(0x7, 0)=29	Pass!
+\end{lstlisting}
+\end{homeworkProblem}
+
+\end{document}
