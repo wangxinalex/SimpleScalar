@@ -74,6 +74,9 @@ struct ifid_buf fd;
 struct idex_buf de;
 struct exmem_buf em;
 struct memwb_buf mw, wb;
+/*Two special resgisters prepared for MULTU*/
+int HI=0;
+int LO=0;
 
 #define DNA			(-1)
 
@@ -291,7 +294,7 @@ void do_stall(){
 void do_forward(){
 /*EX Hazard*/
 	if(em.inst.a != NOP && !em.MemRead && 
-			(de.oprand.in1 == em.oprand.out1||de.oprand.in2 == em.oprand.out1)){
+			(em.oprand.out1 == de.oprand.in1 || em.oprand.out1 == de.oprand.in2 )){
 		/*the value of out1 is not determined*/
 		if(em.oprand.out1 == de.RegisterRs){
 			/*printf("ForwardA = 10\n");*/
@@ -302,7 +305,7 @@ void do_forward(){
 		}
 /*MEM Hazard, the "else if" is imprtant for we should not let the MEM forwarding rewite the result of EX forwarding*/
 	}else if(mw.inst.a != NOP && 
-			(de.oprand.in1 == mw.oprand.out1||de.oprand.in2 == mw.oprand.out1)){
+			(mw.oprand.out1 == de.oprand.in1 || mw.oprand.out1 == de.oprand.in2)){
 		if(mw.oprand.out1 == de.RegisterRs){
 			/*printf("ForwardA = 01\n");*/
 			de.ReadData1 = mw.MemtoReg == 1?mw.MemReadData:mw.ALUResult;
@@ -382,6 +385,7 @@ READ_OPRAND_VALUE:
     switch(de.opcode){
 	case ADD:
 		de.Branch = 0;
+		/*Write destination is RD*/
 		de.RegDst = 1;
 		de.MemtoReg = 0;
 		de.RegWrite = 1;
@@ -404,7 +408,33 @@ READ_OPRAND_VALUE:
 		de.MemRead = 0;
 		de.MemWrite = 0;
 		break;
+		/*Strange...*/
+	case MULTU:
+		de.Branch = 0;
+		de.RegDst = 0;
+		de.MemtoReg = 0;
+		de.RegWrite = 0;
+		de.MemRead = 0;
+		de.MemWrite = 0;
+    case MFLO:
+		de.Branch = 0;
+		/*Target is RD*/
+		de.RegDst = 1;
+		de.MemtoReg = 0;
+		de.RegWrite = 1;
+		de.MemRead = 0;
+		de.MemWrite = 0;
     case ADDIU:
+	    de.Branch = 0;
+		/*Write desination is RT*/
+		de.RegDst = 0;
+		de.MemtoReg = 0;
+		de.RegWrite = 1;
+		de.MemRead = 0;
+		de.MemWrite = 0;
+		de.ExtendedImm = UIMM;
+		break;
+	case ADDI:
 	    de.Branch = 0;
 		de.RegDst = 0;
 		de.MemtoReg = 0;
@@ -434,6 +464,19 @@ READ_OPRAND_VALUE:
 		de.Branch = (de.ReadData1 != de.ReadData2);
 		/*printf("%i %i %s\n",de.ReadData1,de.ReadData2,de.Branch?"Branch Taken":"Not Taken");*/
 		break;
+	case BEQ:
+		de.RegWrite = 0;
+		de.MemRead = 0;
+		de.MemWrite = 0;
+		de.Latch = 1;
+		de.ExtendedImm = OFS;
+		de.Target = (de.PC + 8 + (OFS<<2));
+		/*This do_forward is important, if we want to get the result of Branch comparison in decode stage, we must forward the result again in decode stage */
+		do_forward();
+		de.Branch = (de.ReadData1 == de.ReadData2);
+		/*printf("%i %i %s\n",de.ReadData1,de.ReadData2,de.Branch?"Branch Taken":"Not Taken");*/
+		break;
+
 	case JUMP:
 	    de.Branch = 0;
 		de.RegWrite = 0;
@@ -510,14 +553,26 @@ void do_ex()
 	  case SUBU:
 		 em.ALUResult = (unsigned)de.ReadData1 - (unsigned)de.ReadData2;
 		 break;
+	  case MULTU:
+		 HI = (int)(((unsigned)de.ReadData1 * (unsigned)de.ReadData2)>>32);
+		 LO = (int)((unsigned)de.ReadData1 * (unsigned)de.ReadData2);
+		 break;
+	  case MFLO:
+		 em.ALUResult = LO;
+		 break;
 	  case ADDIU:
 		 em.ALUResult = (unsigned)de.ReadData1 + (unsigned)de.ExtendedImm;
+		 break;
+		 /*Added in lab3*/
+	  case ADDI:
+		 em.ALUResult = de.ReadData1 + de.ExtendedImm;
 		 break;
 	  case ANDI:
 		 em.ALUResult = de.ReadData1|de.ReadData2;
 		 break;
 	  case BNE:
-		 		
+		 break;
+	  case BEQ:
 		 break;
 	  case JUMP:
 		break;
