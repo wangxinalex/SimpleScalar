@@ -15,6 +15,7 @@
 #undef NO_INSN_COUNT
 
 #include "host.h"
+#include "misc.h"
 #include "machine.h"
 #include "regs.h"
 #include "memory.h"
@@ -571,7 +572,7 @@ void do_ex()
 		 em.ALUResult = (unsigned)de.ReadData1 - (unsigned)de.ReadData2;
 		 break;
 	  case MULTU:
-		 HI = (int)((unsigned long)((unsigned)de.ReadData1 * (unsigned)de.ReadData2)>>32);
+		 HI = (int)(((unsigned long)de.ReadData1 * (unsigned long)de.ReadData2)>>32);
 		 LO = (int)((unsigned)de.ReadData1 * (unsigned)de.ReadData2);
 		 break;
 	  case MFLO:
