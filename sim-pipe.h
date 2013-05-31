@@ -84,6 +84,15 @@ struct memwb_buf{
 
 };
   
+struct execute_sts{
+	int cycle;
+	int mem_access;
+	int cache_hit;
+	int cache_miss;
+	int line_replacement;
+	int line_writeback;
+
+};
 
 /*do fetch stage*/
 void do_if();
@@ -104,6 +113,7 @@ void do_stall();
  
 void dump_pipeline();
 
+void show_statistics();
 void do_forward();
 #define MD_FETCH_INSTI(INST, MEM, PC)					\
   { INST.a = MEM_READ_WORD(mem, (PC));					\

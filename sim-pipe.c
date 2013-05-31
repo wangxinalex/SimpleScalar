@@ -15,7 +15,6 @@
 #undef NO_INSN_COUNT
 
 #include "host.h"
-#include "misc.h"
 #include "machine.h"
 #include "regs.h"
 #include "memory.h"
@@ -74,6 +73,7 @@ struct ifid_buf fd;
 struct idex_buf de;
 struct exmem_buf em;
 struct memwb_buf mw, wb;
+struct execute_sts *sts;
 /*Two special resgisters prepared for MULTU*/
 int HI=0;
 int LO=0;
@@ -236,6 +236,8 @@ sim_uninit(void)
 void
 sim_main(void)
 {
+	sts = malloc(sizeof(struct execute_sts));
+	bzero(sts,sizeof(struct execute_sts));
   fprintf(stderr, "sim: ** starting *pipe* functional simulation **\n");
 
   /* must have natural byte/word ordering */
@@ -252,6 +254,7 @@ sim_main(void)
   {
 	  //handle the pipeline in reverse so that the instruction could be handled in ascending order
 	  sim_num_insn++;
+	  sts->cycle++;
 	  do_stall();
 	  do_forward();
 	  do_wb();
@@ -259,8 +262,13 @@ sim_main(void)
 	  do_ex();
 	  do_id();
 	  do_if();
-	  dump_pipeline();
+	  /*dump_pipeline();*/
   }
+  
+}
+void show_statistics(){
+	printf("Total Cycle number: %d\n",sts->cycle);
+
 }
 /*dump the pipeline*/
 void dump_pipeline(){
@@ -292,29 +300,38 @@ void do_stall(){
  *Check the forwarding condition
  */
 void do_forward(){
+/*MEM Hazard, the "else if" is imprtant for we should not let the MEM forwarding rewite the result of EX forwarding*/
+	if(mw.inst.a != NOP && 
+			(mw.oprand.out1 == de.oprand.in1 || mw.oprand.out1 == de.oprand.in2)){
+		if(mw.oprand.out1 == de.RegisterRs){
+			/*printf("ForwardA = 01\n");*/
+			de.ReadData1 = mw.MemtoReg == 1?mw.MemReadData:mw.ALUResult;
+		}
+		if(de.RegDst==1||de.RegWrite==0){
+		 	if(mw.oprand.out1 == de.RegisterRt){
+				/*printf("ForwardA = 01\n");*/
+				de.ReadData2 = mw.MemtoReg == 1?mw.MemReadData:mw.ALUResult;
+			}
+		}
+		
+	}
+
 /*EX Hazard*/
 	if(em.inst.a != NOP && !em.MemRead && 
 			(em.oprand.out1 == de.oprand.in1 || em.oprand.out1 == de.oprand.in2 )){
 		/*the value of out1 is not determined*/
 		if(em.oprand.out1 == de.RegisterRs){
-			/*printf("ForwardA = 10\n");*/
+			/*printf("ForwardA = 10, Forward Result = %d\n",em.ALUResult);*/
 			de.ReadData1 = em.ALUResult;
-		}else if(em.oprand.out1 == de.RegisterRt){
-			/*printf("ForwardB = 10\n");*/
-			de.ReadData2 = em.ALUResult;
 		}
-/*MEM Hazard, the "else if" is imprtant for we should not let the MEM forwarding rewite the result of EX forwarding*/
-	}else if(mw.inst.a != NOP && 
-			(mw.oprand.out1 == de.oprand.in1 || mw.oprand.out1 == de.oprand.in2)){
-		if(mw.oprand.out1 == de.RegisterRs){
-			/*printf("ForwardA = 01\n");*/
-			de.ReadData1 = mw.MemtoReg == 1?mw.MemReadData:mw.ALUResult;
-		}else if(mw.oprand.out1 == de.RegisterRt){
-			/*printf("ForwardA = 01\n");*/
-			de.ReadData2 = mw.MemtoReg == 1?mw.MemReadData:mw.ALUResult;
+		if(de.RegDst==1||de.RegWrite==0){
+	   		if(em.oprand.out1 == de.RegisterRt){
+				/*printf("ForwardB = 10 ,Forward Result = %d\n",em.ALUResult);*/
+				de.ReadData2 = em.ALUResult;
+			}
 		}
 	}
-}
+} 
 
 void do_if()
 {
@@ -462,7 +479,7 @@ READ_OPRAND_VALUE:
 		/*This do_forward is important, if we want to get the result of Branch comparison in decode stage, we must forward the result again in decode stage */
 		do_forward();
 		de.Branch = (de.ReadData1 != de.ReadData2);
-		/*printf("%i %i %s\n",de.ReadData1,de.ReadData2,de.Branch?"Branch Taken":"Not Taken");*/
+		printf("%i %i %s\n",de.ReadData1,de.ReadData2,de.Branch?"Branch Taken":"Not Taken");
 		break;
 	case BEQ:
 		de.RegWrite = 0;
@@ -474,7 +491,7 @@ READ_OPRAND_VALUE:
 		/*This do_forward is important, if we want to get the result of Branch comparison in decode stage, we must forward the result again in decode stage */
 		do_forward();
 		de.Branch = (de.ReadData1 == de.ReadData2);
-		/*printf("%i %i %s\n",de.ReadData1,de.ReadData2,de.Branch?"Branch Taken":"Not Taken");*/
+		printf("%i %i %s\n",de.ReadData1,de.ReadData2,de.Branch?"Branch Taken":"Not Taken");
 		break;
 
 	case JUMP:
@@ -554,7 +571,7 @@ void do_ex()
 		 em.ALUResult = (unsigned)de.ReadData1 - (unsigned)de.ReadData2;
 		 break;
 	  case MULTU:
-		 HI = (int)(((unsigned)de.ReadData1 * (unsigned)de.ReadData2)>>32);
+		 HI = (int)((unsigned long)((unsigned)de.ReadData1 * (unsigned)de.ReadData2)>>32);
 		 LO = (int)((unsigned)de.ReadData1 * (unsigned)de.ReadData2);
 		 break;
 	  case MFLO:
@@ -631,6 +648,7 @@ void do_wb()
 	}
  	if(wb.inst.a==SYSCALL){
 		printf("Loop terminated. Result = %d\n",GPR(6));
+		show_statistics();
 		SET_GPR(2,SS_SYS_exit);
 		SYSCALL(wb.inst);
 
