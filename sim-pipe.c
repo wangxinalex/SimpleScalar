@@ -432,7 +432,7 @@ READ_OPRAND_VALUE:
 		de.RegWrite = 1;
 		de.MemRead = 0;
 		de.MemWrite = 0;
-		de.ExtendedImm = UIMM;
+		de.ExtendedImm = IMM;
 		break;
 	case ADDI:
 	    de.Branch = 0;
