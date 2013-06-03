@@ -74,7 +74,8 @@ struct ifid_buf fd;
 struct idex_buf de;
 struct exmem_buf em;
 struct memwb_buf mw, wb;
-struct execute_sts *sts;
+struct execute_sts sts;
+struct cache_block cache;
 /*Two special resgisters prepared for MULTU*/
 int HI=0;
 int LO=0;
@@ -237,8 +238,9 @@ sim_uninit(void)
 void
 sim_main(void)
 {
-	sts = malloc(sizeof(struct execute_sts));
-	bzero(sts,sizeof(struct execute_sts));
+  bzero(&sts,sizeof(struct execute_sts));
+  bzero(&cache,sizeof(struct cache_block));
+  clear_cache();
   fprintf(stderr, "sim: ** starting *pipe* functional simulation **\n");
 
   /* must have natural byte/word ordering */
@@ -255,7 +257,7 @@ sim_main(void)
   {
 	  //handle the pipeline in reverse so that the instruction could be handled in ascending order
 	  sim_num_insn++;
-	  sts->cycle++;
+	  sts.cycle++;
 	  do_stall();
 	  do_forward();
 	  do_wb();
@@ -265,12 +267,17 @@ sim_main(void)
 	  do_if();
 	  /*dump_pipeline();*/
   }
-  
+  clear_cache();
 }
 void show_statistics(){
-	printf("Total Cycle number: %d\n",sts->cycle);
-
+	printf("Total Cycle Number: %d\n",sts.cycle);
+	printf("Total Cache Access Number: %d\n",sts.mem_access);
+	printf("Total Cache Hit Number: %d\n",sts.cache_hit);
+	printf("Total Cache Miss Number: %d\n",sts.cache_miss);
+	printf("Total Cache Replacements Number: %d\n",sts.line_replacement);
+	printf("Total Cache WriteBack Number: %d\n",sts.line_writeback);
 }
+
 /*dump the pipeline*/
 void dump_pipeline(){
 	enum md_fault_type _fault;
@@ -632,10 +639,14 @@ void do_mem()
   mw.MemtoReg = em.MemtoReg;
   mw.MemRead = em.MemRead;
   mw.MemWrite = em.MemWrite;
-  if(mw.MemRead){
-  	mw.MemReadData = READ_WORD(em.ALUResult,_fault);
-  }else if(mw.MemWrite){
-    WRITE_WORD(mw.WriteData,mw.ALUResult,_fault);
+  if(mw.opcode == LW){
+	/*sts.mem_access++; 	*/
+	  read_cache(mw.ALUResult);
+  	  mw.MemReadData = READ_WORD(mw.ALUResult,_fault);
+  }else if(mw.opcode == SW){
+      /*sts.mem_access++;*/
+	  write_cache(mw.ALUResult, mw.WriteData);
+      WRITE_WORD(mw.WriteData,mw.ALUResult,_fault);
   }
 
     
@@ -647,14 +658,45 @@ void do_wb()
 	if(wb.inst.a == NOP){
 		return;
 	}
- 	if(wb.inst.a==SYSCALL){
+ 	if(wb.inst.a == SYSCALL){
 		printf("Loop terminated. Result = %d\n",GPR(6));
 		show_statistics();
 		SET_GPR(2,SS_SYS_exit);
 		SYSCALL(wb.inst);
 
-	}else if(wb.inst.a!=NOP&&wb.RegWrite==1){
+	}else if(wb.inst.a != NOP && wb.RegWrite == 1){
 		SET_GPR(wb.WriteTargetRegister, wb.MemtoReg?wb.MemReadData:wb.ALUResult);
 	}
 }
 
+/*Clear the cache blocks. If the cache line is dirty, it should be written back  */
+void clear_cache(){
+	int i = 0, j = 0;
+	for(i = 0; i < SETS; i++){
+		for(j = 0; j < WAYS; j++){
+			if(cache.sets[i].lines[j].dirty == 1){
+				sts.line_writeback++;
+				cache.sets[i].lines[j].dirty = 0;
+			}
+			cache.sets[i].lines[j].tag = 0;
+			bzero(&(cache.sets[i].lines[j].data),sizeof(unsigned int)*WAYS);
+			
+		}
+	}
+}
+
+void read_cache(int addr){
+	int tag = TAG(addr);
+	int index = INDEX(addr);
+	int offset = OFFSET(addr);
+	printf("Read Cache: tag = %d\tindex = %d\toffset = %d\n", tag, index, offset);
+	sts.mem_access++;
+}
+
+void write_cache(int addr, int value){
+	int tag = TAG(addr);
+	int index = INDEX(addr);
+	int offset = OFFSET(addr);
+	printf("Write Cache: tag = %d\tindex = %d\toffset = %d\tvalue = %d\n", tag, index, offset, value);
+	sts.mem_access++;
+}

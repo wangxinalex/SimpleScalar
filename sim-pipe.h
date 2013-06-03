@@ -1,5 +1,7 @@
 #include "machine.h"
 
+#define WAYS 4
+#define SETS 16
 /* define values related to operands, all possible combinations are included */
 typedef struct{
   int in1;			/* input 1 register number */
@@ -44,6 +46,7 @@ struct idex_buf {
   int Branch;
   int Latch;
 };
+
 
 /*define buffer between execute and memory stage*/
 struct exmem_buf{
@@ -91,7 +94,21 @@ struct execute_sts{
 	int cache_miss;
 	int line_replacement;
 	int line_writeback;
+};
 
+struct cache_line{
+	unsigned int valid : 1;
+	unsigned int dirty : 1;
+	unsigned int tag : 24;
+	unsigned int data[4];
+};
+
+struct cache_set{
+	struct cache_line lines[WAYS];
+};
+
+struct cache_block{
+	struct cache_set sets[SETS];
 };
 
 /*do fetch stage*/
@@ -109,21 +126,34 @@ void do_mem();
 /*do write_back to register*/
 void do_wb();
 
+/*check if the pipeline should stall a cycle*/
 void do_stall();
  
 void dump_pipeline();
 
 void show_statistics();
+
 void do_forward();
+
+void read_cache(int addr);
+
+void write_cache(int addr, int value);
+
+void clear_cache();
+
 #define MD_FETCH_INSTI(INST, MEM, PC)					\
   { INST.a = MEM_READ_WORD(mem, (PC));					\
     INST.b = MEM_READ_WORD(mem, (PC) + sizeof(word_t)); }
 
 #define SET_OPCODE(OP, INST) ((OP) = ((INST).a & 0xff)) 
 
-#define RSI(INST)		(INST.b >> 24& 0xff)		/* reg source #1 */
+#define RSI(INST)		((INST.b >> 24) & 0xff)		/* reg source #1 */
 #define RTI(INST)		((INST.b >> 16) & 0xff)		/* reg source #2 */
 #define RDI(INST)		((INST.b >> 8) & 0xff)		/* reg dest */
 
 #define IMMI(INST)	((int)((/* signed */short)(INST.b & 0xffff)))	/*get immediate value*/
 #define TARGI(INST)	(INST.b & 0x3ffffff)		/*jump target*/
+
+#define TAG(ADDRESS)	((ADDRESS >> 8) & 0xffffff)
+#define INDEX(ADDRESS)	((ADDRESS >> 4) & 0xf)
+#define OFFSET(ADDRESS)	((ADDRESS >> 2) & 0x3)
