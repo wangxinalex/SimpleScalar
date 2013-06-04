@@ -1,0 +1,158 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Short Sectioned Assignment
+% LaTeX Template
+% Version 1.0 (5/5/12)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% Frits Wenneker (http://www.howtotex.com)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[paper=a4, fontsize=11pt]{scrartcl} % A4 paper and 11pt font size
+
+\usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
+\usepackage{fourier} % Use the Adobe Utopia font for the document - comment this line to return to the LaTeX default
+\usepackage[english]{babel} % English language/hyphenation
+\usepackage{amsmath,amsfonts,amsthm} % Math packages
+\usepackage[usenames,dvipsnames]{color} % Required for custom colors
+\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
+\usepackage{listings} % Required for insertion of code
+\usepackage{sectsty} % Allows customizing section commands
+\allsectionsfont{\centering \normalfont\scshape} % Make all sections centered, the default font and small caps
+
+\usepackage{fancyhdr} % Custom headers and footers
+\pagestyle{fancyplain} % Makes all pages in the document conform to the custom headers and footers
+\fancyhead{} % No page header - if you want one, create it in the same way as the footers below
+\fancyfoot[L]{} % Empty left footer
+\fancyfoot[C]{} % Empty center footer
+\fancyfoot[R]{\thepage} % Page numbering for right footer
+\renewcommand{\headrulewidth}{0pt} % Remove header underlines
+\renewcommand{\footrulewidth}{0pt} % Remove footer underlines
+\setlength{\headheight}{13.6pt} % Customize the height of the header
+
+\numberwithin{equation}{section} % Number equations within sections (i.e. 1.1, 1.2, 2.1, 2.2 instead of 1, 2, 3, 4)
+\numberwithin{figure}{section} % Number figures within sections (i.e. 1.1, 1.2, 2.1, 2.2 instead of 1, 2, 3, 4)
+\numberwithin{table}{section} % Number tables within sections (i.e. 1.1, 1.2, 2.1, 2.2 instead of 1, 2, 3, 4)
+
+\setlength\parindent{0pt} % Removes all indentation from paragraphs - comment this line for an assignment with lots of text
+
+\definecolor{MyDarkGreen}{rgb}{0.0,0.4,0.0} % This is the color used for comments
+\lstdefinestyle{C}{language=C, % Use Perl in this example
+        frame=single, % Single frame around code
+        basicstyle=\small\ttfamily, % Use small true type font
+        keywordstyle=[1]\color{Blue}\bf, % Perl functions bold and blue
+        keywordstyle=[2]\color{Purple}, % Perl function arguments purple
+        keywordstyle=[3]\color{Blue}\underbar, % Custom functions underlined and blue
+        identifierstyle=, % Nothing special about identifiers
+        commentstyle=\usefont{T1}{pcr}{m}{sl}\color{MyDarkGreen}\small, % Comments small dark green courier font
+        stringstyle=\color{Purple}, % Strings are purple
+        showstringspaces=false, % Don't put marks in string spaces
+        tabsize=5, % 5 spaces per tab
+        %
+        % Put standard Perl functions not included in the default language here
+        morekeywords={rand},
+        %
+        % Put Perl function parameters here
+        morekeywords=[2]{on, off, interp},
+        %
+        % Put user defined functions here
+        morekeywords=[3]{test},
+       	%
+        morecomment=[l][\color{Blue}]{...}, % Line continuation (...) like blue comment
+        numbers=left, % Line numbers on left
+        firstnumber=1, % Line numbers start with line 1
+        numberstyle=\tiny\color{Blue}, % Line numbers are blue and small
+        stepnumber=5 % Line numbers go in steps of 5
+}
+
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} % Create horizontal rule command with 1 argument of height
+
+\title{	
+\normalfont \normalsize
+\textsc{Fudan University, Software School} \\ [25pt] % Your university, school and/or department name(s)
+\horrule{0.5pt} \\[0.4cm] % Thin top horizontal rule
+\huge Design Document of Architecture Project 2 \\ % The assignment title
+\horrule{2pt} \\[0.5cm] % Thick bottom horizontal rule
+}
+
+\author{Wang Xin\\10302010023} % Your name
+
+\date{\normalsize\today} % Today's date or a custom date
+
+\begin{document}
+
+\maketitle % Print the title
+
+%----------------------------------------------------------------------------------------
+%	PROBLEM 1
+%----------------------------------------------------------------------------------------
+
+\section{Preparation Work}
+
+This project is based on the five-stage pipeline processor we designed in Project1. However, the instruction set implemented previously is not sufficient to support the new program \textbf{mmm}, which is a sparse matrix multiplication. Hence the first task is to implement these instructions, including addi, multu, mflo, beq, etc.
+
+The implementation of multu is a little different from others. According to the definition of SimpleScalarToolSet, multu needs two extra registers: HI and LO to store the higher and lower bits of the result. Thus we need to add to more registers in the processor, but only the LO would be copied to RegisterRd in the following instruction mflo.
+
+
+%----------------------------------------------------------------------------------------
+%	PROBLEM 2
+%----------------------------------------------------------------------------------------
+
+\section{Structure of Cache Block}
+
+According to the requirements, the cache we need to simulate is a four-way set-associative unified cache. We need to first analyze the structure of each cache line.
+\subsection{Structure of Cache Line}
+The cache line is the basic unit of the cache organization.
+\begin{enumerate}
+\item \textbf{Valid Bit}: A bit to indicate whether the data stored in this line is valid.
+\item \textbf{Dirty Bit}: Since we need to simulate the write-back policy, the dirty bit is set to indicate if the cache line should be written back to memory when replaced.
+\item \textbf{Tag}: A field used to compare with the value of the tag field of the cache. In this project, there are totally $16=2^{4}$ sets. The block size is $4=2^{2}$ and two bits for the byte part of the address. Therefore, the length of the tag filed should be 32-4-2-2=24.
+\item \textbf{ref\_count}: Since we need to implement a FIFO replacement algorithm, we need a field to record the cycles since the cache line was replaced in. This field will increase by one every time when the set was accessed. The cache line with largest ref\_count will be replaced out when a new line is to be written in a full set.
+\end{enumerate}
+The structure of cache line is as follows:
+\begin{lstlisting}[caption=structure of cache line,label=cache line,style=C]
+struct cache_line{
+	unsigned int valid : 1;
+	unsigned int dirty : 1;
+	unsigned int tag : 24;
+	/*used to implement the FIFO queue*/
+	unsigned int ref_count ;
+	unsigned int data[4];
+};
+\end{lstlisting}
+
+\subsection{Structure of Cache Set and Cache Block}
+A Cache set consists of four cache lines and the total cache block contains 16 cache sets. 
+%------------------------------------------------
+
+\section{Cache Read and Cache Write}
+
+
+
+\subsection{Cache Read}
+
+\begin{enumerate}
+\item It is a unified cache including I-cache, is used to provide instructions for execution in instruction fetch stage and Data cache, or D-cache, which is used to provide data in memory access stage. Hence we need to simulate the cache read in both do\_if and do\_mem stages (LW instruction).
+\item LW instruction will invoke cache read operation. The processor will get the index and tag by the given address. Then use the index to get the corresponding cache set. First of all, all four cache lines in the referred cache set will have their ref\_count increased. Then, if a valid line has the same tag with the address, a cache hit will happen and it will take 1 cycle latency. Otherwise, it will cause a cache miss and take 10 cycles latency.
+\item When cache miss, the processor will check the set to find an empty line(valid = 0). If not found, it will cause a cache replacement. The cache line with largest ref\_count will be replaced and the ref\_count will be reset to zero. If the replaced line has dirty bit as 1, it will cause a write back.
+\end{enumerate}
+
+\subsection{Cache Write}
+Since the cache takes write-back policy, the cache write-operation will cause a cache-read operation initially to get the index and the ways of the writing target if it is already in the cache. If the target line was not in the cache, it will similarly cause a cache replacement. The dirty bit of the written cache line will be set to 1.
+%----------------------------------------------------------------------------------------
+
+\end{document}
