@@ -136,7 +136,7 @@ void show_statistics();
 
 void do_forward();
 
-void read_cache(int addr);
+int read_cache(int addr);
 
 void write_cache(int addr, int value);
 
