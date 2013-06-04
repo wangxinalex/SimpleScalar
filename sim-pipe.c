@@ -487,7 +487,7 @@ READ_OPRAND_VALUE:
 		/*This do_forward is important, if we want to get the result of Branch comparison in decode stage, we must forward the result again in decode stage */
 		do_forward();
 		de.Branch = (de.ReadData1 != de.ReadData2);
-		printf("%i %i %s\n",de.ReadData1,de.ReadData2,de.Branch?"Branch Taken":"Not Taken");
+		/*printf("%i %i %s\n",de.ReadData1,de.ReadData2,de.Branch?"Branch Taken":"Not Taken");*/
 		break;
 	case BEQ:
 		de.RegWrite = 0;
@@ -499,7 +499,7 @@ READ_OPRAND_VALUE:
 		/*This do_forward is important, if we want to get the result of Branch comparison in decode stage, we must forward the result again in decode stage */
 		do_forward();
 		de.Branch = (de.ReadData1 == de.ReadData2);
-		printf("%i %i %s\n",de.ReadData1,de.ReadData2,de.Branch?"Branch Taken":"Not Taken");
+		/*printf("%i %i %s\n",de.ReadData1,de.ReadData2,de.Branch?"Branch Taken":"Not Taken");*/
 		break;
 
 	case JUMP:
@@ -679,6 +679,8 @@ void clear_cache(){
 				cache.sets[i].lines[j].dirty = 0;
 			}
 			cache.sets[i].lines[j].tag = 0;
+			cache.sets[i].lines[j].valid = 0;
+			cache.sets[i].lines[j].ref_count = 0;
 			bzero(&(cache.sets[i].lines[j].data),sizeof(unsigned int)*WAYS);
 			
 		}
@@ -688,8 +690,50 @@ void clear_cache(){
 void read_cache(int addr){
 	int tag = TAG(addr);
 	int index = INDEX(addr);
-	int offset = OFFSET(addr);
-	printf("Read Cache: tag = %d\tindex = %d\toffset = %d\n", tag, index, offset);
+	int i,j,k,latest,max_ref_count;
+	/*printf("Read Cache: tag = %d\tindex = %d\toffset = %d\n", tag, index, offset);*/
+	for(i = 0; i < WAYS; i++ ){
+		if(cache.sets[index].lines[i].valid == 1){
+			cache.sets[index].lines[i].ref_count ++;
+		}
+	}
+
+	for(i = 0; i < WAYS; i++){
+		if(cache.sets[index].lines[i].tag == tag && cache.sets[index].lines[i].valid == 1){
+			printf("%-20s: tag = %d\tindex = %d\toffset = %d\n","Read Hit", tag, index, i);
+			sts.cache_hit ++;
+			sts.cycle ++;
+			break;
+		}
+	}
+	if(i >= 4){
+		sts.cache_miss ++;
+		sts.cycle += 10;
+		printf("%-20s: tag = %d\tindex = %d\n","Read Miss", tag, index);
+		for(j = 0; j < WAYS; j++){
+			if(cache.sets[index].lines[j].valid == 0){
+				cache.sets[index].lines[j].tag = tag;
+				cache.sets[index].lines[j].valid = 1;
+				cache.sets[index].lines[j].ref_count = 0;
+				break;
+			}
+		}
+		if(j >= 4){
+			latest = 0;
+			max_ref_count = 0;
+			for(k = 0; k < WAYS; k++){
+				if(cache.sets[index].lines[k].ref_count > max_ref_count){
+					latest = k;
+					max_ref_count = cache.sets[index].lines[k].ref_count;
+				}
+			}
+			cache.sets[index].lines[latest].tag = tag;
+			cache.sets[index].lines[latest].valid = 1;
+			cache.sets[index].lines[latest].ref_count = 0;
+			printf("%-20s: tag = %d\tindex = %d\toffset = %d\n","Read Replacement", tag, index, latest);
+			sts.line_replacement ++;
+		}
+	}
 	sts.mem_access++;
 }
 
@@ -697,6 +741,6 @@ void write_cache(int addr, int value){
 	int tag = TAG(addr);
 	int index = INDEX(addr);
 	int offset = OFFSET(addr);
-	printf("Write Cache: tag = %d\tindex = %d\toffset = %d\tvalue = %d\n", tag, index, offset, value);
+	printf("%-20s: tag = %d\tindex = %d\toffset = %d\tvalue = %d\n","Write Cache", tag, index, offset, value);
 	sts.mem_access++;
 }
