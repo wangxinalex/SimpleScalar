@@ -136,7 +136,18 @@ struct cache_line{
 \end{lstlisting}
 
 \subsection{Structure of Cache Set and Cache Block}
-A Cache set consists of four cache lines and the total cache block contains 16 cache sets. 
+A cache set consists of four cache lines and the total cache block contains 16 cache sets.
+\begin{lstlisting}[caption=structure of cache sets and blocks,label=cache set&block,style=C]
+
+struct cache_set{
+	struct cache_line lines[WAYS];
+};
+
+struct cache_block{
+	struct cache_set sets[SETS];
+};
+
+\end{lstlisting}
 %------------------------------------------------
 
 \section{Cache Read and Cache Write}
