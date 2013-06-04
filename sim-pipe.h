@@ -100,7 +100,8 @@ struct cache_line{
 	unsigned int valid : 1;
 	unsigned int dirty : 1;
 	unsigned int tag : 24;
-	unsigned int ref_count : 6;
+	/*used to implement the FIFO queue*/
+	unsigned int ref_count ;
 	unsigned int data[4];
 };
 

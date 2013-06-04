@@ -79,6 +79,7 @@ struct cache_block cache;
 /*Two special resgisters prepared for MULTU*/
 int HI=0;
 int LO=0;
+int cache_on;
 
 #define DNA			(-1)
 
@@ -239,6 +240,7 @@ void
 sim_main(void)
 {
   bzero(&sts,sizeof(struct execute_sts));
+  cache_on = 1;
   bzero(&cache,sizeof(struct cache_block));
   clear_cache();
   fprintf(stderr, "sim: ** starting *pipe* functional simulation **\n");
@@ -270,6 +272,7 @@ sim_main(void)
   clear_cache();
 }
 void show_statistics(){
+	printf("Total Instruction Number: %d\n",(int)sim_num_insn);
 	printf("Total Cycle Number: %d\n",sts.cycle);
 	printf("Total Cache Access Number: %d\n",sts.mem_access);
 	printf("Total Cache Hit Number: %d\n",sts.cache_hit);
@@ -361,6 +364,7 @@ void do_if()
   fd.PC =fd.NPC;
 /*Fetch the next instruction*/
   read_cache((int)fd.PC);
+  read_cache((int)(fd.PC + sizeof(word_t)));
   MD_FETCH_INSTI(new_inst, mem, fd.PC);
   fd.inst = new_inst;
 }
@@ -692,66 +696,82 @@ void clear_cache(){
 int read_cache(int addr){
 	int tag = TAG(addr);
 	int index = INDEX(addr);
-	int i,j,k,latest,max_ref_count;
+	int i, j, k, latest, max_ref_count;
 	sts.mem_access++;
 	/*printf("Read Cache: tag = %d\tindex = %d\toffset = %d\n", tag, index, offset);*/
-	for(i = 0; i < WAYS; i++ ){
-		if(cache.sets[index].lines[i].valid == 1){
-			cache.sets[index].lines[i].ref_count ++;
-		}
-	}
-
-	for(i = 0; i < WAYS; i++){
-		if(cache.sets[index].lines[i].tag == tag && cache.sets[index].lines[i].valid == 1){
-			/*printf("%-20s: tag = %d\tindex = %d\toffset = %d\n","Cache Hit", tag, index, i);*/
-			sts.cache_hit ++;
-			sts.cycle ++;
-			return i; 
-		}
-	}
-	if(i >= 4){
-		sts.cache_miss ++;
-		sts.cycle += 10;
-		/*printf("%-20s: tag = %d\tindex = %d\n","Cache Miss", tag, index);*/
-		for(j = 0; j < WAYS; j++){
-			if(cache.sets[index].lines[j].valid == 0){
-				cache.sets[index].lines[j].tag = tag;
-				cache.sets[index].lines[j].valid = 1;
-				cache.sets[index].lines[j].ref_count = 0;
-				cache.sets[index].lines[j].dirty = 0;
-				return j; 
+	if(cache_on){
+		for(i = 0; i < WAYS; i++ ){
+			if(cache.sets[index].lines[i].valid == 1){
+				cache.sets[index].lines[i].ref_count ++;
+				/*printf("%-20s: tag = %d\tindex = %d\tref_count = %d\n","Ref_count", tag, index, cache.sets[index].lines[i].ref_count);*/
 			}
 		}
-		if(j >= 4){
-			latest = 0;
-			max_ref_count = 0;
-			for(k = 0; k < WAYS; k++){
-				if(cache.sets[index].lines[k].ref_count > max_ref_count){
-					latest = k;
-					max_ref_count = cache.sets[index].lines[k].ref_count;
+	
+		/*cache hit*/
+		for(i = 0; i < WAYS; i++){
+				if(cache.sets[index].lines[i].tag == tag && cache.sets[index].lines[i].valid == 1){
+				/*printf("%-20s: tag = %d\tindex = %d\toffset = %d\n","Cache Hit", tag, index, i);*/
+				sts.cache_hit ++;
+				sts.cycle ++;
+				return i; 
+			}
+		}
+		/*cache miss*/
+		if(i >= 4){
+			sts.cache_miss ++;
+			sts.cycle += 10;
+			/*printf("%-20s: tag = %d\tindex = %d\n","Cache Miss", tag, index);*/
+			/*find the first "empty" cache line */
+			for(j = 0; j < WAYS; j++){
+				if(cache.sets[index].lines[j].valid == 0){
+					cache.sets[index].lines[j].tag = tag;
+					cache.sets[index].lines[j].valid = 1;
+					cache.sets[index].lines[j].ref_count = 0;
+					cache.sets[index].lines[j].dirty = 0;
+					return j; 
 				}
 			}
-			if(cache.sets[index].lines[latest].dirty == 1){
-				sts.line_writeback ++;
-				/*printf("%-20s: tag = %d\tindex = %d\toffset = %d\n","Cache WriteBack", tag, index, latest);*/
+			if(j >= 4){
+				latest = 0;
+				max_ref_count = 0;
+				/*find the cache line which was first swapped in */
+				for(k = 0; k < WAYS; k++){
+					if(cache.sets[index].lines[k].ref_count > max_ref_count){
+						latest = k;
+						max_ref_count = cache.sets[index].lines[k].ref_count;
+					}
+				}
+				/*If the cache line was dirty, it should be written back before being replaced*/
+				if(cache.sets[index].lines[latest].dirty == 1){
+					sts.line_writeback ++;
+					/*printf("%-20s: tag = %d\tindex = %d\toffset = %d\tref_count = %d\n","Cache WriteBack", tag, index, latest, max_ref_count);*/
+				}
+				cache.sets[index].lines[latest].tag = tag;
+				cache.sets[index].lines[latest].valid = 1;
+				cache.sets[index].lines[latest].ref_count = 0;
+				cache.sets[index].lines[latest].dirty = 0;
+				/*printf("%-20s: tag = %d\tindex = %d\toffset = %d\tref_count = %d\n","Cache Replacement", tag, index, latest, max_ref_count);*/
+				sts.line_replacement ++;
+				return latest;
 			}
-			cache.sets[index].lines[latest].tag = tag;
-			cache.sets[index].lines[latest].valid = 1;
-			cache.sets[index].lines[latest].ref_count = 0;
-			cache.sets[index].lines[latest].dirty = 0;
-			/*printf("%-20s: tag = %d\tindex = %d\toffset = %d\n","Cache Replacement", tag, index, latest);*/
-			sts.line_replacement ++;
-			return latest;
 		}
+	}else{
+		sts.cycle+=10;
 	}
+	return -1;
 }
 
 void write_cache(int addr, int value){
-	int tag = TAG(addr);
+	/*int tag = TAG(addr);*/
 	int index = INDEX(addr);
-	int offset = OFFSET(addr);
 	/*printf("%-20s: tag = %d\tindex = %d\toffset = %d\tvalue = %d\n","Write Cache", tag, index, offset, value);*/
-	int way = read_cache(addr);
-	cache.sets[index].lines[way].dirty = 1;
-
+	if(cache_on){
+		/*get the exactly way from cache*/
+		int way = read_cache(addr);
+		/*mark the cache line "dirty"*/
+		cache.sets[index].lines[way].dirty = 1;
+	}else{
+		sts.mem_access ++;
+		sts.cycle+=10;
+	}
 }
