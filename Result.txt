@@ -1,0 +1,8 @@
+Loop terminated. Result = 4096
+Total Instruction Number: 5005649
+Total Cycle Number: 19117799
+Total Cache Access Number: 11059872
+Total Cache Hit Number: 10720730
+Total Cache Miss Number: 339142
+Total Cache Replacements Number: 339078
+Total Cache WriteBack Number: 20214
