@@ -58,16 +58,12 @@
         stringstyle=\color{Purple}, % Strings are purple
         showstringspaces=false, % Don't put marks in string spaces
         tabsize=5, % 5 spaces per tab
-        %
         % Put standard Perl functions not included in the default language here
-        morekeywords={rand},
-        %
+        morekeywords={rand},        %
         % Put Perl function parameters here
         morekeywords=[2]{on, off, interp},
-        %
         % Put user defined functions here
         morekeywords=[3]{test},
-       	%
         morecomment=[l][\color{Blue}]{...}, % Line continuation (...) like blue comment
         numbers=left, % Line numbers on left
         firstnumber=1, % Line numbers start with line 1
@@ -152,18 +148,16 @@ struct cache_block{
 
 \section{Cache Read and Cache Write}
 
-
-
 \subsection{Cache Read}
 
 \begin{enumerate}
-\item It is a unified cache including I-cache, is used to provide instructions for execution in instruction fetch stage and Data cache, or D-cache, which is used to provide data in memory access stage. Hence we need to simulate the cache read in both do\_if and do\_mem stages (LW instruction).
-\item LW instruction will invoke cache read operation. The processor will get the index and tag by the given address. Then use the index to get the corresponding cache set. First of all, all four cache lines in the referred cache set will have their ref\_count increased. Then, if a valid line has the same tag with the address, a cache hit will happen and it will take 1 cycle latency. Otherwise, it will cause a cache miss and take 10 cycles latency.
-\item When cache miss, the processor will check the set to find an empty line(valid = 0). If not found, it will cause a cache replacement. The cache line with largest ref\_count will be replaced and the ref\_count will be reset to zero. If the replaced line has dirty bit as 1, it will cause a write back.
+\item \textbf{Unified Cache}: It is a unified cache including I-cache, is used to provide instructions for execution in instruction fetch stage and Data cache, or D-cache, which is used to provide data in memory access stage. Hence we need to simulate the cache read in both do\_if and do\_mem stages (LW instruction).
+\item \textbf{Cache Hit and Miss}: LW instruction will invoke cache read operation. The processor will get the index and tag by the given address. Then use the index to get the corresponding cache set. First of all, all four cache lines in the referred cache set will have their ref\_count increased to represent that it has been replaced in this cache line for one more cycle. Then, if a valid line has the same tag with the address, a cache hit will happen and it will take 1 cycle latency. Otherwise, it will cause a cache miss and take 10 cycles latency.
+\item \textbf{Cache Write Back}: When cache misses, the processor will check the set to find an empty line(valid = 0). If not found, it will cause a cache replacement. The cache line with largest ref\_count will be replaced and the ref\_count will be reset to zero. If the replaced line has dirty bit as 1, it will cause a write back.
 \end{enumerate}
 
 \subsection{Cache Write}
-Since the cache takes write-back policy, the cache write-operation will cause a cache-read operation initially to get the index and the ways of the writing target if it is already in the cache. If the target line was not in the cache, it will similarly cause a cache replacement. The dirty bit of the written cache line will be set to 1.
+Since the cache takes write-back policy, the cache write-operation will firstly cause a cache-read operation initially to get the index and the ways of the writing target if it is already in the cache. If the target line was not in the cache, it will similarly be replaced in cache block. The dirty bit of the written cache line will be set to 1 ultimately.
 %----------------------------------------------------------------------------------------
 
 \end{document}
