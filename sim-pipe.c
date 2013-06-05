@@ -273,11 +273,11 @@ sim_main(void)
 }
 void show_statistics(){
 	printf("Total Instruction Number: %d\n",(int)sim_num_insn);
-	printf("Total Cycle Number: %d\n",sts.cycle);
+	printf("Total Clock Cycle Number: %d\n",sts.cycle);
 	printf("Total Cache Access Number: %d\n",sts.mem_access);
 	printf("Total Cache Hit Number: %d\n",sts.cache_hit);
 	printf("Total Cache Miss Number: %d\n",sts.cache_miss);
-	printf("Total Cache Replacements Number: %d\n",sts.line_replacement);
+	printf("Total Cache Replacement Number: %d\n",sts.line_replacement);
 	printf("Total Cache WriteBack Number: %d\n",sts.line_writeback);
 }
 
