@@ -717,7 +717,7 @@ int read_cache(int addr){
 			}
 		}
 		/*cache miss*/
-		if(i >= 4){
+		if(i >= WAYS){
 			sts.cache_miss ++;
 			sts.cycle += 10;
 			/*printf("%-20s: tag = %d\tindex = %d\n","Cache Miss", tag, index);*/
@@ -731,7 +731,7 @@ int read_cache(int addr){
 					return j; 
 				}
 			}
-			if(j >= 4){
+			if(j >= WAYS){
 				latest = 0;
 				max_ref_count = 0;
 				/*find the cache line which was first swapped in */
